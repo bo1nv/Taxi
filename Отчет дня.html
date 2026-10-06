@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0e0e10" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f2f2f5" media="(prefers-color-scheme: light)">
+<meta name="apple-mobile-web-app-title" content="Смена">
+<meta name="format-detection" content="telephone=no">
+<title>Смена</title>
+<script>
+// Иконка (canvas 180x180) и manifest — без внешних файлов
+(function () {
+  try {
+    var c = document.createElement('canvas');
+    c.width = 180; c.height = 180;
+    var x = c.getContext('2d');
+    x.fillStyle = '#17171a';
+    x.fillRect(0, 0, 180, 180);
+    for (var r = 0; r < 2; r++) {
+      for (var i = 0; i < 15; i++) {
+        x.fillStyle = (i + r) % 2 === 0 ? '#ffc83d' : '#17171a';
+        x.fillRect(i * 12, 156 + r * 12, 12, 12);
+      }
+    }
+    x.fillStyle = '#ffc83d';
+    x.font = '700 112px -apple-system, "SF Pro Display", Helvetica, Arial, sans-serif';
+    x.textAlign = 'center';
+    x.textBaseline = 'middle';
+    x.fillText('₽', 90, 80);
+    var url = c.toDataURL('image/png');
+    var l = document.createElement('link');
+    l.rel = 'apple-touch-icon'; l.href = url;
+    document.head.appendChild(l);
+    var m = {
+      name: 'Смена такси', short_name: 'Смена', display: 'standalone',
+      start_url: location.href, background_color: '#0e0e10', theme_color: '#0e0e10',
+      icons: [{ src: url, sizes: '180x180', type: 'image/png' }]
+    };
+    var ml = document.createElement('link');
+    ml.rel = 'manifest';
+    ml.href = URL.createObjectURL(new Blob([JSON.stringify(m)], { type: 'application/json' }));
+    document.head.appendChild(ml);
+  } catch (e) {}
+})();
+</script>
+<style>
+:root{
+  --bg:#0e0e10; --card:#1a1a1e; --card2:#26262c; --text:#f5f5f6; --muted:#8d8d96;
+  --line:#2b2b31; --accent:#ffc83d; --on-accent:#1a1400; --ink:#ffc83d;
+  --pos:#3ddc84; --neg:#ff6b5e; --tab:rgba(18,18,21,.86);
+}
+@media (prefers-color-scheme: light){
+  :root{
+    --bg:#f2f2f5; --card:#ffffff; --card2:#ebebf0; --text:#111114; --muted:#6c6c75;
+    --line:#e2e2e8; --ink:#a87500; --pos:#12a058; --neg:#e0463a; --tab:rgba(250,250,252,.88);
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--text);
+  font:16px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
+  -webkit-text-size-adjust:100%;overscroll-behavior:none;font-variant-numeric:tabular-nums}
+body{position:fixed;inset:0;-webkit-user-select:none;user-select:none}
+input,textarea{-webkit-user-select:text;user-select:text}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;touch-action:manipulation;cursor:pointer}
+#app{height:100dvh;display:flex;flex-direction:column}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  padding:calc(env(safe-area-inset-top) + 14px) 16px 28px}
+.head{display:flex;align-items:center;justify-content:space-between;min-height:44px;margin-bottom:10px}
+h1{margin:0;font-size:30px;font-weight:700;letter-spacing:-.02em}
+.link{color:var(--ink);font-size:17px;min-height:44px;padding:0 4px}
+
+/* Чистыми */
+.net{background:var(--card);border-radius:20px;overflow:hidden;margin-bottom:6px}
+.checker{height:8px;background:repeating-conic-gradient(var(--accent) 0 25%,var(--card2) 0 50%) 0 0/8px 8px}
+.net-body{padding:14px 18px 16px}
+.net-label{font-size:15px;color:var(--muted)}
+.net-val{font-size:46px;font-weight:700;letter-spacing:-.03em;line-height:1.1;margin-top:2px}
+.net-sub{display:flex;gap:16px;flex-wrap:wrap;margin-top:6px;font-size:14px;color:var(--muted)}
+.pos{color:var(--pos)} .neg{color:var(--neg)}
+
+/* Группы и поля */
+.gt{font-size:13px;color:var(--muted);margin:20px 16px 7px}
+.card{background:var(--card);border-radius:16px;overflow:hidden}
+.row{display:flex;align-items:center;min-height:50px;padding:0 16px;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.lab{flex:1;font-size:17px}
+.row input{width:46%;min-width:0;border:0;background:transparent;color:var(--text);
+  font:inherit;font-size:17px;text-align:right;outline:none;padding:12px 0;-webkit-appearance:none;appearance:none}
+.row input[type=date]{width:auto;min-height:44px;color-scheme:dark light}
+.row input::placeholder{color:var(--muted);opacity:.6}
+.unit{width:26px;margin-left:6px;color:var(--muted);font-size:17px}
+.unit.w{width:auto}
+
+.actions{display:flex;gap:10px;margin-top:22px}
+.btn{flex:1;height:52px;border-radius:14px;font-size:17px;font-weight:600}
+.primary{background:var(--accent);color:var(--on-accent)}
+.secondary{background:var(--card);color:var(--text)}
+.danger{color:var(--neg);background:var(--card);width:100%;margin-top:10px}
+.btn:active{opacity:.7}
+
+/* Тап-бар */
+.tabs{display:flex;border-top:1px solid var(--line);background:var(--tab);
+  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);padding-bottom:env(safe-area-inset-bottom)}
+.tabs button{flex:1;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  font-size:11px;color:var(--muted)}
+.tabs button.on{color:var(--ink)}
+.tabs svg{width:24px;height:24px}
+
+/* История */
+.mh{display:flex;justify-content:space-between;align-items:baseline;margin:22px 16px 7px;font-size:13px;color:var(--muted)}
+.mh b{font-weight:600;color:var(--text);font-size:15px}
+.hrow{display:flex;align-items:center;justify-content:space-between;min-height:60px;padding:8px 16px;
+  border-top:1px solid var(--line);width:100%;text-align:left}
+.hrow:first-child{border-top:0}
+.hrow:active{background:var(--card2)}
+.hrow .a{font-size:17px;font-weight:500}
+.hrow .b{font-size:13px;color:var(--muted);margin-top:1px}
+.hrow .r{text-align:right}
+.hrow .r .v{font-size:17px;font-weight:600}
+.empty{color:var(--muted);text-align:center;padding:40px 24px;font-size:16px}
+.data-btns{display:flex;gap:10px}
+.data-btns .btn{height:46px;font-size:16px;background:var(--card)}
+
+/* Статистика */
+.seg{display:flex;background:var(--card);border-radius:12px;padding:3px;margin:4px 0 12px}
+.seg button{flex:1;height:36px;border-radius:9px;font-size:15px;font-weight:500;color:var(--muted)}
+.seg button.on{background:var(--accent);color:var(--on-accent);font-weight:600}
+.chart{display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:14px 10px 10px;scrollbar-width:none}
+.chart::-webkit-scrollbar{display:none}
+.col{flex:0 0 38px;display:flex;flex-direction:column;align-items:center;border-radius:10px;padding:4px 0 6px}
+.col.on{background:var(--card2)}
+.col .top,.col .bot{width:16px;display:flex}
+.col .top{align-items:flex-end;border-bottom:1px solid var(--line);width:100%;justify-content:center}
+.col .bot{align-items:flex-start;justify-content:center;width:100%}
+.bar{width:16px;border-radius:4px 4px 0 0;background:var(--accent);opacity:.55}
+.bar.n{border-radius:0 0 4px 4px;background:var(--neg)}
+.bar.z{background:var(--line);opacity:1;height:2px;border-radius:1px}
+.col.on .bar{opacity:1}
+.l1{font-size:12px;margin-top:6px;color:var(--muted)}
+.l2{font-size:11px;color:var(--muted);opacity:.8}
+.col.on .l1{color:var(--text);font-weight:600}
+.dt{margin:18px 4px 2px;font-size:20px;font-weight:600}
+.dnet{font-size:38px;font-weight:700;letter-spacing:-.03em;margin:0 4px}
+.dd{font-size:14px;color:var(--muted);margin:0 4px 12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{background:var(--card);border-radius:14px;padding:12px 14px}
+.tile .k{font-size:13px;color:var(--muted)}
+.tile .v{font-size:20px;font-weight:600;margin-top:2px}
+.pad{padding:14px 16px}
+.cat{margin-top:12px}
+.cat:first-child{margin-top:0}
+.cat .t{display:flex;justify-content:space-between;font-size:15px;margin-bottom:5px}
+.cat .t span:last-child{color:var(--muted)}
+.track{height:8px;border-radius:4px;background:var(--card2);overflow:hidden}
+.fill{height:100%;background:var(--accent);border-radius:4px}
+.sub{font-size:14px;color:var(--muted);margin-top:8px}
+.ctitle{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:17px;font-weight:600}
+.ctitle .link{font-size:15px;min-height:32px;font-weight:400}
+.big{font-size:22px;font-weight:700;margin-bottom:8px}
+.big small{font-size:15px;color:var(--muted);font-weight:400}
+
+/* Фото таксометра */
+.addph{width:100%;min-height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  color:var(--ink);font-size:17px}
+.addph svg{width:30px;height:30px}
+.addph:active{background:var(--card2)}
+#phImg{display:block;width:100%;max-height:340px;object-fit:contain;background:#000}
+.phbtns{display:flex;border-top:1px solid var(--line)}
+.phbtns button{flex:1;min-height:48px;font-size:17px;color:var(--ink)}
+.phbtns button+button{border-left:1px solid var(--line);color:var(--neg)}
+.viewer{position:fixed;inset:0;background:#000;z-index:25;display:flex;align-items:center;justify-content:center;
+  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.viewer img{max-width:100%;max-height:100%;object-fit:contain}
+.cam{font-size:12px;margin-left:6px}
+
+/* Шторка и тост */
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;z-index:20}
+.sheet{width:100%;background:var(--card);border-radius:22px 22px 0 0;padding:20px 16px calc(env(safe-area-inset-bottom) + 16px)}
+.sheet h2{margin:0 0 12px;font-size:20px}
+.sheet input{width:100%;height:50px;border-radius:12px;border:0;background:var(--card2);color:var(--text);
+  font-size:20px;padding:0 14px;outline:none;margin-bottom:12px}
+.sheet .btn{width:100%;flex:none;margin-top:8px}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 76px);transform:translate(-50%,12px);
+  background:var(--text);color:var(--bg);padding:11px 18px;border-radius:22px;font-size:15px;font-weight:500;
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:30;white-space:nowrap}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <main class="scroll" id="scroll">
+
+    <!-- ОТЧЁТ -->
+    <section id="s-report">
+      <div class="head"><h1 id="formTitle">Новый отчёт</h1><button class="link" id="btnNew">Очистить</button></div>
+      <div class="net">
+        <div class="checker"></div>
+        <div class="net-body">
+          <div class="net-label">Чистыми</div>
+          <div class="net-val" id="netVal">0 ₽</div>
+          <div class="net-sub"><span id="netExp"></span><span id="netHour"></span></div>
+        </div>
+      </div>
+      <div class="gt">Смена</div>
+      <div class="card" id="g1"></div>
+      <div class="gt">Доход</div>
+      <div class="card" id="g2"></div>
+      <div class="gt">Расходы</div>
+      <div class="card" id="g3"></div>
+      <div class="gt">Фото из таксометра</div>
+      <div class="card" id="photoBox"></div>
+      <input type="file" id="photoIn" accept="image/*" hidden>
+      <div class="actions">
+        <button class="btn secondary" id="btnCopy">Скопировать</button>
+        <button class="btn primary" id="btnSave">Сохранить</button>
+      </div>
+      <button class="btn danger" id="btnShare" style="color:var(--text)" hidden>Поделиться с фото</button>
+      <button class="btn danger" id="btnDel" hidden>Удалить отчёт</button>
+    </section>
+
+    <!-- ИСТОРИЯ -->
+    <section id="s-history" hidden>
+      <div class="head"><h1>История</h1></div>
+      <div id="histList"></div>
+      <div class="gt">Данные</div>
+      <div class="data-btns">
+        <button class="btn" id="btnExport">Экспорт</button>
+        <button class="btn" id="btnImport">Импорт</button>
+      </div>
+      <input type="file" id="fileIn" accept=".json,application/json" hidden>
+    </section>
+
+    <!-- СТАТИСТИКА -->
+    <section id="s-stats" hidden>
+      <div class="head"><h1>Статистика</h1></div>
+      <div id="goalBox"></div>
+      <div class="gt">Период</div>
+      <div class="seg" id="seg">
+        <button data-p="day" class="on">Дни</button>
+        <button data-p="week">Недели</button>
+        <button data-p="month">Месяцы</button>
+      </div>
+      <div class="card"><div class="chart" id="chart"></div></div>
+      <div id="detail"></div>
+    </section>
+
+  </main>
+
+  <nav class="tabs" id="tabs">
+    <button data-t="report" class="on">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>
+      Отчёт
+    </button>
+    <button data-t="history">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+      История
+    </button>
+    <button data-t="stats">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>
+      Статистика
+    </button>
+  </nav>
+</div>
+
+<div class="sheet-bg" id="goalSheet" hidden>
+  <div class="sheet">
+    <h2>Цель на месяц</h2>
+    <input id="goalInput" inputmode="numeric" placeholder="Сумма чистыми, ₽" autocomplete="off">
+    <button class="btn primary" id="goalSave">Сохранить</button>
+    <button class="btn secondary" id="goalClear">Убрать цель</button>
+  </div>
+</div>
+<div class="viewer" id="viewer" hidden><img id="viewerImg" alt=""></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (s) { return document.querySelector(s); };
+  var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+
+  /* ---------- Хранилище ---------- */
+  var KEY = 'taxi_reports_v1', GKEY = 'taxi_goal_v1', mem = {};
+  function load(k, def) {
+    try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : def; }
+    catch (e) { return (k in mem) ? mem[k] : def; }
+  }
+  function store(k, v) { mem[k] = v; try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+
+  var reports = load(KEY, []);
+  if (!Array.isArray(reports)) reports = [];
+  var goal = Number(load(GKEY, 0)) || 0;
+  function persist() { store(KEY, reports); }
+
+  /* ---------- Утилиты ---------- */
+  var NUMK = ['hours', 'km', 'income', 'tips', 'fuel', 'toll', 'rent', 'other', 'wash'];
+  var MONTHS = ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+  var MONTHS_G = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  var MSHORT = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  var DOW = ['вс','пн','вт','ср','чт','пт','сб'];
+  var DOWL = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
+  var nf = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 });
+  var nf1 = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 });
+  var cap = function (s) { return s.charAt(0).toUpperCase() + s.slice(1); };
+  var money = function (n) { return nf.format(Math.round(n)) + ' ₽'; };
+  var dotNum = function (n) { return nf.format(Math.round(n)).replace(/[\s\u00a0\u202f]/g, '.').replace('\u2212', '-'); };
+  var pnum = function (v) {
+    var n = parseFloat(String(v).replace(/\s/g, '').replace(',', '.'));
+    return isFinite(n) ? n : 0;
+  };
+  var ymd = function (d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  };
+  var pd = function (k) { var p = k.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); };
+  var fmtDate = function (k) { return k.split('-').reverse().join('.'); };
+  var net = function (r) { return r.income + r.tips - r.fuel - r.toll - r.rent - r.other - r.wash; };
+  var exps = function (r) { return r.fuel + r.toll + r.rent + r.other + r.wash; };
+  function plural(n, a, b, c) {
+    var m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return a;
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return b;
+    return c;
+  }
+  function hoursText(h) {
+    if (Math.round(h) === h) return h + ' ' + plural(h, 'час', 'часа', 'часов');
+    return String(h).replace('.', ',') + ' часа';
+  }
+
+  var toastT;
+  function toast(msg) {
+    var t = $('#toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastT);
+    toastT = setTimeout(function () { t.classList.remove('show'); }, 1800);
+  }
+
+  /* ---------- Форма отчёта ---------- */
+  var F = {
+    g1: [['hours','На линии','ч'], ['km','Пробег','км']],
+    g2: [['income','Заработано','₽'], ['tips','Чаевые','₽']],
+    g3: [['fuel','Топливо','₽'], ['toll','Платная дорога','₽'], ['rent','Аренда','₽'], ['other','Расходы','₽'], ['wash','Мойка','₽']]
+  };
+  function rowHtml(f) {
+    return '<label class="row"><span class="lab">' + f[1] + '</span>' +
+      '<input id="f_' + f[0] + '" inputmode="decimal" placeholder="0" autocomplete="off" enterkeyhint="next">' +
+      '<span class="unit">' + f[2] + '</span></label>';
+  }
+  $('#g1').innerHTML = '<label class="row"><span class="lab">Дата</span><input type="date" id="f_date"></label>' + F.g1.map(rowHtml).join('');
+  $('#g2').innerHTML = F.g2.map(rowHtml).join('');
+  $('#g3').innerHTML = F.g3.map(rowHtml).join('');
+
+  var loadedDate = null;
+
+  function readForm() {
+    var r = { date: $('#f_date').value };
+    NUMK.forEach(function (k) { r[k] = pnum($('#f_' + k).value); });
+    return r;
+  }
+  function fillForm(r) {
+    NUMK.forEach(function (k) { $('#f_' + k).value = r && r[k] ? String(r[k]).replace('.', ',') : ''; });
+    curPhoto = null; photoLoading = false; renderPhoto();
+    if (r && r.date) loadPhotoFor(r.date);
+  }
+
+  /* ---------- Фото (IndexedDB, сжатие через canvas) ---------- */
+  var curPhoto = null, photoLoading = false, photoMem = {}, photoDates = {}, memWarned = false, dbP = null;
+  function db() {
+    if (!dbP) dbP = new Promise(function (res) {
+      try {
+        var q = indexedDB.open('taxi_photos', 1);
+        q.onupgradeneeded = function () { q.result.createObjectStore('p'); };
+        q.onsuccess = function () { res(q.result); };
+        q.onerror = function () { res(null); };
+      } catch (e) { res(null); }
+    });
+    return dbP;
+  }
+  function pGet(d) {
+    return db().then(function (h) {
+      if (!h) return photoMem[d] || null;
+      return new Promise(function (res) {
+        try {
+          var q = h.transaction('p').objectStore('p').get(d);
+          q.onsuccess = function () { res(q.result || null); };
+          q.onerror = function () { res(null); };
+        } catch (e) { res(null); }
+      });
+    });
+  }
+  function pSet(d, v) {
+    photoDates[d] = true;
+    return db().then(function (h) {
+      if (!h) {
+        photoMem[d] = v;
+        if (!memWarned) { memWarned = true; toast('Фото сохранится только до закрытия приложения'); }
+        return true;
+      }
+      return new Promise(function (res) {
+        try {
+          var t = h.transaction('p', 'readwrite');
+          t.objectStore('p').put(v, d);
+          t.oncomplete = function () { res(true); };
+          t.onerror = t.onabort = function () { res(false); };
+        } catch (e) { res(false); }
+      });
+    });
+  }
+  function pDel(d) {
+    delete photoDates[d];
+    return db().then(function (h) {
+      if (!h) { delete photoMem[d]; return true; }
+      return new Promise(function (res) {
+        try {
+          var t = h.transaction('p', 'readwrite');
+          t.objectStore('p').delete(d);
+          t.oncomplete = function () { res(true); };
+          t.onerror = t.onabort = function () { res(false); };
+        } catch (e) { res(false); }
+      });
+    });
+  }
+  function pAll() {
+    return db().then(function (h) {
+      if (!h) return Object.assign({}, photoMem);
+      return new Promise(function (res) {
+        var out = {};
+        try {
+          var q = h.transaction('p').objectStore('p').openCursor();
+          q.onsuccess = function () {
+            var c = q.result;
+            if (c) { out[c.key] = c.value; c.continue(); } else res(out);
+          };
+          q.onerror = function () { res(out); };
+        } catch (e) { res(out); }
+      });
+    });
+  }
+  function pKeys() {
+    return db().then(function (h) {
+      if (!h) return Object.keys(photoMem);
+      return new Promise(function (res) {
+        try {
+          var q = h.transaction('p').objectStore('p').getAllKeys();
+          q.onsuccess = function () { res(q.result || []); };
+          q.onerror = function () { res([]); };
+        } catch (e) { res([]); }
+      });
+    });
+  }
+  function loadPhotoFor(d) {
+    photoLoading = true;
+    pGet(d).then(function (v) {
+      if ($('#f_date').value !== d) return;
+      curPhoto = v; photoLoading = false; renderPhoto();
+    });
+  }
+  function renderPhoto() {
+    var b = $('#photoBox');
+    if (!curPhoto) {
+      b.innerHTML = '<button class="addph" data-a="add">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7H8l1.2-2h5.6L16 7h2.5A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.5"/></svg>' +
+        '<span>Добавить фото</span></button>';
+    } else {
+      b.innerHTML = '<img id="phImg" data-a="view" alt="Фото из таксометра">' +
+        '<div class="phbtns"><button data-a="add">Заменить</button><button data-a="del">Убрать</button></div>';
+      $('#phImg').src = curPhoto;
+    }
+    $('#btnShare').hidden = !curPhoto;
+  }
+  function processImage(file) {
+    return new Promise(function (res, rej) {
+      var url = URL.createObjectURL(file), im = new Image();
+      im.onload = function () {
+        var M = 1600, w = im.naturalWidth, h = im.naturalHeight, k = Math.min(1, M / Math.max(w, h));
+        var c = document.createElement('canvas');
+        c.width = Math.round(w * k); c.height = Math.round(h * k);
+        var x = c.getContext('2d');
+        x.fillStyle = '#000'; x.fillRect(0, 0, c.width, c.height);
+        x.drawImage(im, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        res(c.toDataURL('image/jpeg', 0.82));
+      };
+      im.onerror = function () { URL.revokeObjectURL(url); rej(); };
+      im.src = url;
+    });
+  }
+  function dataUrlToFile(u, name) {
+    var p = u.split(','), bin = atob(p[1]), arr = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new File([arr], name, { type: 'image/jpeg' });
+  }
+  $('#photoBox').addEventListener('click', function (e) {
+    var a = e.target.closest('[data-a]');
+    if (!a) return;
+    var act = a.getAttribute('data-a');
+    if (act === 'add') $('#photoIn').click();
+    else if (act === 'del') { curPhoto = null; photoLoading = false; renderPhoto(); }
+    else if (act === 'view') { $('#viewerImg').src = curPhoto; $('#viewer').hidden = false; }
+  });
+  $('#viewer').addEventListener('click', function () { this.hidden = true; });
+  $('#photoIn').addEventListener('change', function () {
+    var f = this.files && this.files[0], inp = this;
+    if (!f) return;
+    processImage(f).then(function (u) {
+      curPhoto = u; photoLoading = false; renderPhoto(); toast('Фото добавлено');
+    }, function () { toast('Не удалось открыть фото'); });
+    inp.value = '';
+  });
+  $('#btnShare').addEventListener('click', function () {
+    var r = readForm();
+    if (!r.date) { toast('Укажите дату'); return; }
+    var text = reportText(r);
+    try {
+      var file = dataUrlToFile(curPhoto, 'taxi-' + r.date + '.jpg');
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], text: text }).catch(function () {});
+        return;
+      }
+    } catch (e) {}
+    copyText(text).then(function (ok) { toast(ok ? 'Текст скопирован, фото добавьте вручную' : 'Не удалось поделиться'); });
+  });
+  function reportText(r) {
+    var m = function (n) { return dotNum(n) + ' ₽'; };
+    return [
+      fmtDate(r.date), '',
+      '⏱ На Линии : ' + hoursText(r.hours),
+      '🛣 Пробег : ' + nf1.format(r.km) + ' км',
+      '⛽ Топлива : ' + m(r.fuel),
+      '🚧 Платная дорога : ' + m(r.toll),
+      '🚕 Аренда : ' + m(r.rent),
+      '📊 Расходы : ' + m(r.other),
+      '🫧 Мойка : ' + m(r.wash),
+      '💰 Чаевые : ' + m(r.tips),
+      '💵 ЧИСТЫМИ : ' + m(net(r))
+    ].join('\n');
+  }
+  function updateNet() {
+    var r = readForm(), n = net(r), v = $('#netVal');
+    v.textContent = money(n);
+    v.className = 'net-val ' + (n > 0 ? 'pos' : n < 0 ? 'neg' : '');
+    $('#netExp').textContent = 'Расходы ' + money(exps(r));
+    $('#netHour').textContent = r.hours > 0 ? money(n / r.hours) + ' в час' : '';
+  }
+  function updateMeta() {
+    $('#formTitle').textContent = loadedDate ? 'Отчёт за ' + fmtDate(loadedDate).slice(0, 5) : 'Новый отчёт';
+    $('#btnDel').hidden = !loadedDate;
+  }
+  function findReport(d) { for (var i = 0; i < reports.length; i++) if (reports[i].date === d) return reports[i]; return null; }
+  function loadReport(d) {
+    var r = findReport(d);
+    $('#f_date').value = d;
+    if (r) { fillForm(r); loadedDate = d; }
+    else { loadedDate = null; }
+    updateMeta(); updateNet();
+  }
+  function resetForm() {
+    fillForm(null); loadedDate = null;
+    var t = ymd(new Date());
+    var r = findReport(t);
+    $('#f_date').value = t;
+    if (r) { fillForm(r); loadedDate = t; }
+    updateMeta(); updateNet();
+  }
+
+  $('#s-report').addEventListener('input', updateNet);
+  $('#f_date').addEventListener('change', function () {
+    var d = this.value;
+    if (!d) return;
+    var r = findReport(d);
+    if (r) { fillForm(r); loadedDate = d; }
+    else if (loadedDate) { fillForm(null); loadedDate = null; }
+    updateMeta(); updateNet();
+  });
+  $$('#s-report input[inputmode]').forEach(function (inp, i, all) {
+    inp.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      if (all[i + 1]) all[i + 1].focus(); else inp.blur();
+    });
+  });
+  $('#btnNew').addEventListener('click', resetForm);
+
+  $('#btnSave').addEventListener('click', function () {
+    var r = readForm();
+    if (!r.date) { toast('Укажите дату'); return; }
+    var sum = 0; NUMK.forEach(function (k) { sum += Math.abs(r[k]); });
+    if (!sum) { toast('Заполните хотя бы одно поле'); return; }
+    var i = reports.findIndex(function (x) { return x.date === r.date; });
+    if (i >= 0) reports[i] = r; else reports.push(r);
+    reports.sort(function (a, b) { return b.date.localeCompare(a.date); });
+    persist();
+    loadedDate = r.date; updateMeta();
+    var ph = photoLoading ? Promise.resolve() : (curPhoto ? pSet(r.date, curPhoto) : pDel(r.date));
+    ph.then(function () { renderHistory(); });
+    renderHistory(); renderStats();
+    if (document.activeElement) document.activeElement.blur();
+    toast('Сохранено');
+  });
+  $('#btnDel').addEventListener('click', function () {
+    if (!loadedDate || !confirm('Удалить отчёт за ' + fmtDate(loadedDate) + '?')) return;
+    reports = reports.filter(function (x) { return x.date !== loadedDate; });
+    var d = loadedDate;
+    persist(); pDel(d); renderHistory(); renderStats();
+    fillForm(null); loadedDate = null; updateMeta(); updateNet();
+    toast('Удалено');
+  });
+  function copyText(t) {
+    function fallback() {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = t; ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+        document.body.appendChild(ta); ta.focus(); ta.select(); ta.setSelectionRange(0, t.length);
+        var ok = document.execCommand('copy'); ta.remove(); return ok;
+      } catch (e) { return false; }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(t).then(function () { return true; }, function () { return fallback(); });
+    }
+    return Promise.resolve(fallback());
+  }
+  $('#btnCopy').addEventListener('click', function () {
+    var r = readForm();
+    if (!r.date) { toast('Укажите дату'); return; }
+    copyText(reportText(r)).then(function (ok) { toast(ok ? 'Скопировано' : 'Не удалось скопировать'); });
+  });
+
+  /* ---------- История ---------- */
+  function renderHistory() {
+    var box = $('#histList');
+    if (!reports.length) {
+      box.innerHTML = '<div class="empty">Пока нет отчётов. Заполните первый на вкладке «Отчёт».</div>';
+      return;
+    }
+    var groups = {}, order = [];
+    reports.forEach(function (r) {
+      var m = r.date.slice(0, 7);
+      if (!groups[m]) { groups[m] = []; order.push(m); }
+      groups[m].push(r);
+    });
+    box.innerHTML = order.map(function (m) {
+      var list = groups[m], tot = 0;
+      list.forEach(function (r) { tot += net(r); });
+      var y = m.slice(0, 4), mi = +m.slice(5) - 1;
+      var rows = list.map(function (r) {
+        var d = pd(r.date), n = net(r);
+        var sub = [];
+        if (r.hours) sub.push(nf1.format(r.hours) + ' ч');
+        if (r.km) sub.push(nf1.format(r.km) + ' км');
+        return '<button class="hrow" data-d="' + r.date + '"><div><div class="a">' + d.getDate() + ' ' + MSHORT[d.getMonth()] + ', ' + DOW[d.getDay()] +
+          '</div><div class="b">' + (sub.join('  ') || 'без данных о смене') + (photoDates[r.date] ? '<span class="cam">📷</span>' : '') + '</div></div>' +
+          '<div class="r"><div class="v ' + (n < 0 ? 'neg' : 'pos') + '">' + money(n) + '</div>' +
+          '<div class="b">' + (r.hours > 0 ? money(n / r.hours) + ' в час' : '') + '</div></div></button>';
+      }).join('');
+      return '<div class="mh"><b>' + cap(MONTHS[mi]) + ' ' + y + '</b><span>' + money(tot) + '</span></div><div class="card">' + rows + '</div>';
+    }).join('');
+  }
+  $('#histList').addEventListener('click', function (e) {
+    var b = e.target.closest('.hrow');
+    if (!b) return;
+    loadReport(b.getAttribute('data-d'));
+    show('report');
+  });
+
+  /* Экспорт / импорт */
+  $('#btnExport').addEventListener('click', function () {
+    pAll().then(function (photos) {
+      var data = JSON.stringify({ version: 2, goal: goal, reports: reports, photos: photos });
+      var name = 'taxi-' + ymd(new Date()) + '.json';
+      function download() {
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+        a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      }
+      try {
+        var file = new File([data], name, { type: 'application/json' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          navigator.share({ files: [file], title: 'Данные такси' }).catch(function (e) {
+            if (!e || e.name !== 'AbortError') download();
+          });
+          return;
+        }
+      } catch (e) {}
+      download();
+    });
+  });
+  $('#btnImport').addEventListener('click', function () { $('#fileIn').click(); });
+  $('#fileIn').addEventListener('change', function () {
+    var f = this.files && this.files[0], inp = this;
+    if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function () {
+      try {
+        var d = JSON.parse(rd.result);
+        var arr = Array.isArray(d) ? d : d.reports;
+        if (!Array.isArray(arr)) throw new Error('bad');
+        var clean = [];
+        arr.forEach(function (r) {
+          if (!r || !/^\d{4}-\d{2}-\d{2}$/.test(r.date)) return;
+          var o = { date: r.date };
+          NUMK.forEach(function (k) { o[k] = isFinite(+r[k]) ? +r[k] : 0; });
+          clean.push(o);
+        });
+        if (!clean.length) throw new Error('empty');
+        if (!confirm('Загрузить отчётов: ' + clean.length + '? Отчёты с одинаковой датой будут заменены.')) return;
+        clean.forEach(function (o) {
+          var i = reports.findIndex(function (x) { return x.date === o.date; });
+          if (i >= 0) reports[i] = o; else reports.push(o);
+        });
+        reports.sort(function (a, b) { return b.date.localeCompare(a.date); });
+        if (d && d.goal > 0) { goal = +d.goal; store(GKEY, goal); }
+        persist();
+        var jobs = [];
+        if (d && d.photos && typeof d.photos === 'object') {
+          Object.keys(d.photos).forEach(function (k) {
+            var v = d.photos[k];
+            if (/^\d{4}-\d{2}-\d{2}$/.test(k) && typeof v === 'string' && v.indexOf('data:image/') === 0) jobs.push(pSet(k, v));
+          });
+        }
+        Promise.all(jobs).then(function () {
+          renderHistory(); renderStats(); resetForm();
+          toast('Данные загружены');
+        });
+      } catch (e) { toast('Файл не подходит'); }
+    };
+    rd.readAsText(f);
+    inp.value = '';
+  });
+
+  /* ---------- Статистика ---------- */
+  var period = 'day', sel = null;
+
+  function mondayOf(d) {
+    var x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+    return x;
+  }
+  function agg(items) {
+    var a = { n: items.length, hours: 0, km: 0, income: 0, tips: 0, fuel: 0, toll: 0, rent: 0, other: 0, wash: 0, exp: 0, net: 0, items: items };
+    items.forEach(function (r) {
+      NUMK.forEach(function (k) { a[k] += r[k]; });
+      a.exp += exps(r); a.net += net(r);
+    });
+    return a;
+  }
+  function buckets(kind) {
+    var now = new Date(), t = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var N = { day: 31, week: 26, month: 24 }[kind], out = [];
+    for (var i = N - 1; i >= 0; i--) {
+      var s, e;
+      if (kind === 'day') { s = new Date(t); s.setDate(s.getDate() - i); e = s; }
+      else if (kind === 'week') { s = mondayOf(t); s.setDate(s.getDate() - 7 * i); e = new Date(s); e.setDate(e.getDate() + 6); }
+      else { s = new Date(t.getFullYear(), t.getMonth() - i, 1); e = new Date(t.getFullYear(), t.getMonth() - i + 1, 0); }
+      var sk = ymd(s), ek = ymd(e);
+      var items = reports.filter(function (r) { return r.date >= sk && r.date <= ek; });
+      var b = agg(items); b.s = s; b.e = e;
+      out.push(b);
+    }
+    return out;
+  }
+  function labels(b) {
+    if (period === 'day') return [b.s.getDate(), DOW[b.s.getDay()]];
+    if (period === 'week') return [b.s.getDate(), MSHORT[b.s.getMonth()]];
+    return [MSHORT[b.s.getMonth()], String(b.s.getFullYear()).slice(2)];
+  }
+  function title(b) {
+    var s = b.s, e = b.e;
+    if (period === 'day') return s.getDate() + ' ' + MONTHS_G[s.getMonth()] + ', ' + DOWL[s.getDay()];
+    if (period === 'week') {
+      if (s.getMonth() === e.getMonth()) return s.getDate() + '–' + e.getDate() + ' ' + MONTHS_G[e.getMonth()];
+      return s.getDate() + ' ' + MSHORT[s.getMonth()] + ' – ' + e.getDate() + ' ' + MSHORT[e.getMonth()];
+    }
+    return cap(MONTHS[s.getMonth()]) + ' ' + s.getFullYear();
+  }
+
+  var cur = [];
+  function renderChart() {
+    cur = buckets(period);
+    if (sel === null || sel >= cur.length) sel = cur.length - 1;
+    var H = 104, maxP = 0, maxN = 0;
+    cur.forEach(function (b) { if (b.net > maxP) maxP = b.net; if (-b.net > maxN) maxN = -b.net; });
+    var tot = maxP + maxN, th = tot ? Math.round(H * maxP / tot) : H, bh = H - th;
+    $('#chart').innerHTML = cur.map(function (b, i) {
+      var top = '', bot = '';
+      if (!b.n || b.net === 0) top = '<div class="bar z"></div>';
+      else if (b.net > 0) top = '<div class="bar" style="height:' + Math.max(3, Math.round(b.net / maxP * th)) + 'px"></div>';
+      else bot = '<div class="bar n" style="height:' + Math.max(3, Math.round(-b.net / maxN * bh)) + 'px"></div>';
+      var l = labels(b);
+      return '<div class="col' + (i === sel ? ' on' : '') + '" data-i="' + i + '">' +
+        '<div class="top" style="height:' + th + 'px">' + top + '</div>' +
+        '<div class="bot" style="height:' + bh + 'px">' + bot + '</div>' +
+        '<div class="l1">' + l[0] + '</div><div class="l2">' + l[1] + '</div></div>';
+    }).join('');
+  }
+  function centerSel() {
+    var ch = $('#chart'), c = ch.querySelector('.col.on');
+    if (c) ch.scrollLeft = c.offsetLeft - ch.clientWidth / 2 + c.offsetWidth / 2;
+  }
+  function renderDetail() {
+    var b = cur[sel], box = $('#detail');
+    if (!b) { box.innerHTML = ''; return; }
+    var h = '<div class="dt">' + title(b) + '</div>';
+    if (!b.n) {
+      box.innerHTML = h + '<div class="empty" style="padding:24px 0">Нет отчётов за этот период.</div>';
+      return;
+    }
+    h += '<div class="dnet ' + (b.net < 0 ? 'neg' : 'pos') + '">' + money(b.net) + '</div>';
+    var prev = cur[sel - 1], cmp = '';
+    if (prev && prev.n && prev.net !== 0) {
+      var pct = Math.round((b.net - prev.net) / Math.abs(prev.net) * 100);
+      cmp = (pct > 0 ? '+' : '') + pct + '% к ' + { day: 'предыдущему дню', week: 'предыдущей неделе', month: 'предыдущему месяцу' }[period];
+    }
+    h += '<div class="dd">Чистыми' + (cmp ? ', ' + cmp : '') + '</div>';
+    var last = b.n > 1 ? ['За смену', money(b.net / b.n)] : ['Чаевые', money(b.tips)];
+    var tiles = [
+      ['Заработано', money(b.income)], ['Расходы', money(b.exp)],
+      ['Смен', String(b.n)], ['На линии', nf1.format(b.hours) + ' ч'],
+      ['Пробег', nf1.format(b.km) + ' км'], ['В час', b.hours > 0 ? money(b.net / b.hours) : '—'],
+      ['За километр', b.km > 0 ? nf1.format(b.net / b.km) + ' ₽' : '—'], last
+    ];
+    h += '<div class="grid">' + tiles.map(function (t) {
+      return '<div class="tile"><div class="k">' + t[0] + '</div><div class="v">' + t[1] + '</div></div>';
+    }).join('') + '</div>';
+
+    if (b.n > 1) {
+      var best = b.items.reduce(function (m, r) { return net(r) > net(m) ? r : m; }, b.items[0]);
+      var bd = pd(best.date);
+      h += '<div class="gt">Лучший день</div><div class="card pad"><div class="big">' + money(net(best)) +
+        ' <small>' + bd.getDate() + ' ' + MONTHS_G[bd.getMonth()] + '</small></div></div>';
+    }
+    var cats = [['Аренда', b.rent], ['Топливо', b.fuel], ['Расходы', b.other], ['Платная дорога', b.toll], ['Мойка', b.wash]]
+      .filter(function (c) { return c[1] > 0; }).sort(function (x, y) { return y[1] - x[1]; });
+    if (cats.length) {
+      h += '<div class="gt">Куда уходят деньги</div><div class="card pad">' + cats.map(function (c) {
+        var p = c[1] / b.exp * 100;
+        return '<div class="cat"><div class="t"><span>' + c[0] + '</span><span>' + money(c[1]) + ' (' + Math.round(p) + '%)</span></div>' +
+          '<div class="track"><div class="fill" style="width:' + p + '%"></div></div></div>';
+      }).join('') + '</div>';
+    }
+    box.innerHTML = h;
+  }
+  function renderGoal() {
+    var box = $('#goalBox');
+    if (!goal) {
+      box.innerHTML = '<div class="card pad"><div class="ctitle"><span>Цель на месяц</span><button class="link" data-g="1">Задать</button></div>' +
+        '<div class="sub" style="margin:0">Задайте сумму чистыми, и здесь появится прогресс.</div></div>';
+      return;
+    }
+    var now = new Date(), mk = ymd(now).slice(0, 7);
+    var a = agg(reports.filter(function (r) { return r.date.slice(0, 7) === mk; }));
+    var dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(), day = now.getDate();
+    var left = goal - a.net, pct = Math.max(0, Math.min(100, a.net / goal * 100));
+    var lines = '';
+    if (left <= 0) lines = '<div class="sub">Цель выполнена.</div>';
+    else {
+      lines = '<div class="sub">Осталось ' + money(left) + ', это ' + money(left / (dim - day + 1)) + ' в день.</div>';
+      if (a.net > 0) lines += '<div class="sub" style="margin-top:2px">При таком темпе к концу месяца: ' + money(a.net / day * dim) + '.</div>';
+    }
+    box.innerHTML = '<div class="card pad"><div class="ctitle"><span>Цель на ' + MONTHS[now.getMonth()] + '</span><button class="link" data-g="1">Изменить</button></div>' +
+      '<div class="big">' + money(a.net) + ' <small>из ' + money(goal) + '</small></div>' +
+      '<div class="track"><div class="fill" style="width:' + pct + '%"></div></div>' + lines + '</div>';
+  }
+  function renderStats() {
+    renderGoal(); renderChart(); renderDetail(); centerSel();
+  }
+  $('#seg').addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (!b) return;
+    period = b.getAttribute('data-p'); sel = null;
+    $$('#seg button').forEach(function (x) { x.classList.toggle('on', x === b); });
+    renderChart(); renderDetail(); centerSel();
+  });
+  $('#chart').addEventListener('click', function (e) {
+    var c = e.target.closest('.col');
+    if (!c) return;
+    sel = +c.getAttribute('data-i');
+    $$('#chart .col').forEach(function (x) { x.classList.toggle('on', x === c); });
+    renderDetail();
+  });
+
+  /* Цель */
+  function openGoal() {
+    $('#goalInput').value = goal ? String(goal) : '';
+    $('#goalClear').hidden = !goal;
+    $('#goalSheet').hidden = false;
+    setTimeout(function () { $('#goalInput').focus(); }, 50);
+  }
+  $('#goalBox').addEventListener('click', function (e) { if (e.target.closest('[data-g]')) openGoal(); });
+  $('#goalSheet').addEventListener('click', function (e) { if (e.target === this) this.hidden = true; });
+  $('#goalSave').addEventListener('click', function () {
+    var v = pnum($('#goalInput').value);
+    goal = v > 0 ? Math.round(v) : 0;
+    store(GKEY, goal); $('#goalSheet').hidden = true; renderGoal();
+  });
+  $('#goalClear').addEventListener('click', function () {
+    goal = 0; store(GKEY, 0); $('#goalSheet').hidden = true; renderGoal();
+  });
+
+  /* ---------- Вкладки ---------- */
+  function show(t) {
+    ['report', 'history', 'stats'].forEach(function (n) { $('#s-' + n).hidden = n !== t; });
+    $$('#tabs button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-t') === t); });
+    $('#scroll').scrollTop = 0;
+    if (t === 'stats') renderStats();
+    if (t === 'history') renderHistory();
+  }
+  $('#tabs').addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (b) show(b.getAttribute('data-t'));
+  });
+
+  /* ---------- Старт ---------- */
+  resetForm();
+  renderHistory();
+  pKeys().then(function (keys) {
+    keys.forEach(function (k) { photoDates[k] = true; });
+    renderHistory();
+  });
+})();
+</script>
+</body>
+</html>
